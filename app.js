@@ -97,23 +97,32 @@
   function pointHTML(p) {
     var avoid = p.uso === 'evitar';
     var reads = (p.lecturas || []).map(function (l) {
-      var pico = isNum(l.pico_pct) ? ' · pico ' + pct(l.pico_pct) + ' el ' + fmtDate(l.pico_fecha) : '';
+      var det = [];
+      if (isNum(l.pico_pct)) det.push('pico ' + pct(l.pico_pct) + ' el ' + fmtDate(l.pico_fecha));
+      if (l.fecha_prevision) det.push('previsión ' + fmtDate(l.fecha_prevision));
       return '<div class="read"><b>' + esc(sp(l.especie).nombre) + '</b>' +
         '<span class="v' + hi(l.prob_pct) + (isNum(l.prob_pct) ? '' : ' nm') + '">' + pct(l.prob_pct) + '</span>' +
-        '<span class="muted">' + pico + (l.fecha_prevision ? ' · previsión ' + fmtDate(l.fecha_prevision) : '') + '</span></div>' +
+        '<span class="muted read__det">' + det.join(' · ') + '</span></div>' +
         (l.nota ? '<p class="pt__note">' + esc(l.nota) + '</p>' : '');
     }).join('');
     var c = coordText(p);
+    var bosque = val(p.bosque), bosqueCorto = bosque.split(' (')[0];
+    var resumen = metros(p.alt_m) + ' · ' + esc(bosqueCorto) + ' · Orientación: ' + esc(val(p.orientacion));
+    var pid = 'pt-' + esc(p.id);
     return '<li class="pt' + (avoid ? ' pt--avoid' : '') + '">' +
-      '<div class="pt__top"><span class="pt__name">' + esc(p.nombre) + '</span>' + (avoid ? '<span class="pt__tag">Evitar</span>' : '') + '</div>' +
-      '<div class="pt__facts"><span><b>' + metros(p.alt_m) + '</b></span><span>Orientación: <b>' + esc(val(p.orientacion)) + '</b></span><span>Bosque: <b>' + esc(val(p.bosque)) + '</b></span></div>' +
+      '<button type="button" class="pt__head" data-acc aria-expanded="false" aria-controls="' + pid + '">' +
+      '<span class="pt__main"><span class="pt__top"><span class="pt__name">' + esc(p.nombre) + '</span>' + (avoid ? '<span class="pt__tag">Evitar</span>' : '') + '</span>' +
+      '<span class="pt__sum">' + resumen + '</span></span>' +
+      '<svg class="pt__chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></button>' +
+      '<div class="pt__panel" id="' + pid + '"><div class="pt__inner">' +
+      (bosque !== bosqueCorto ? '<p class="pt__note">Bosque: ' + esc(bosque) + '</p>' : '') +
       '<div class="pt__reads">' + reads + '</div>' +
       (p.nota ? '<p class="pt__note">' + esc(p.nota) + '</p>' : '') +
       '<div class="pt__coords">' + c + '</div>' +
       '<div class="pt__actions">' +
-      '<a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + p.lat + ',' + p.lon + '">Abrir en Google Maps</a>' +
+      '<a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + p.lat + ',' + p.lon + '">Abrir Maps</a>' +
       '<button type="button" class="btn btn--outline btn--sm" data-copy="' + c + '">Copiar coordenadas</button>' +
-      '</div></li>';
+      '</div></div></div></li>';
   }
 
   function panelHTML(z) {
@@ -144,8 +153,9 @@
     }).join('');
 
     var sub = subtitle(z);
-    return '<div class="pcover z' + zIndex(z) + '">' + photo(z) + dayBadge(z) +
+    return '<div class="pbar">' +
       '<button type="button" class="btn--close" data-close aria-label="Cerrar panel"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>' +
+      '<div class="pcover z' + zIndex(z) + '">' + photo(z) + dayBadge(z) + '</div>' +
       '<div class="pbody">' +
       '<div class="panel__head"><h2 id="panel-title">' + esc(title(z)) + '</h2>' + (sub ? '<p class="panel__places">' + esc(sub) + '</p>' : '') + '</div>' +
       (z.resumen ? '<p class="panel__sub">' + esc(z.resumen) + '</p>' : '') +
@@ -419,6 +429,7 @@
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
     app._panel.hidden = false;
+    updateStuck();
 
     if (scroll) {
       // Si la tarjeta está arriba del viewport o el panel fuera, baja hasta la tarjeta para que se vea unida a su panel.
@@ -427,6 +438,16 @@
     }
     return true;
   }
+
+  // La barra del panel (día + cerrar) se queda fija bajo la cabecera y cobra fondo al despegarse de la imagen.
+  function updateStuck() {
+    var p = app._panel, bar = p && !p.hidden && p.querySelector('.pbar');
+    if (!bar) return;
+    var navH = document.querySelector('.top-nav').offsetHeight;
+    p.classList.toggle('is-stuck', bar.getBoundingClientRect().top <= navH + 0.5 && p.getBoundingClientRect().top < navH - 0.5);
+  }
+  window.addEventListener('scroll', updateStuck, { passive: true });
+  window.addEventListener('resize', updateStuck);
 
   function toggle(id) {
     if (current === id) { closePanel(); return; }
@@ -466,6 +487,13 @@
     app.addEventListener('click', function (e) {
       var z = e.target.closest('.card, .mz');
       if (z && app.contains(z)) { toggle(z.getAttribute('data-zona')); return; }
+      var ac = e.target.closest('[data-acc]');
+      if (ac) {
+        var open = ac.getAttribute('aria-expanded') !== 'true';
+        ac.setAttribute('aria-expanded', open ? 'true' : 'false');
+        ac.parentNode.classList.toggle('open', open);
+        return;
+      }
       var cp = e.target.closest('[data-copy]');
       if (cp) { copy(cp.getAttribute('data-copy'), cp); return; }
       if (e.target.closest('[data-close]')) closePanel();
