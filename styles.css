@@ -228,7 +228,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .warn1 { justify-self: start; margin-top: 4px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--r-full); background: #fff0ec; color: var(--error); }
 
 .pts { display: grid; gap: 0 32px; align-items: start; }
-.pt { border-top: 1px solid var(--hairline); }
+.pt { border-top: 1px solid rgba(0,0,0,.06); }
 .pt:last-child .pt__head { padding-bottom: 0; }
 .pt.open:last-child .pt__inner { padding-bottom: 0; }
 .pt.open:last-child .pt__panel { padding-top: 0; }
