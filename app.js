@@ -438,9 +438,25 @@
 
   function closePanel(updateHash) {
     var card = current && app.querySelector('.card[data-zona="' + current + '"]');
-    app._panel.hidden = true;
+    var p = app._panel, pr = p.getBoundingClientRect(), navH = document.querySelector('.top-nav').offsetHeight;
+    // Al cerrar, la página se acorta: se conserva lo que el usuario estaba viendo en vez de dejarlo al final.
+    var mode = 'card', anchor = null, before = 0;
+    if (pr.top >= navH) mode = 'top';
+    else if (pr.bottom > navH && pr.bottom < window.innerHeight * 1.5) {
+      for (var n = p.nextElementSibling; n; n = n.nextElementSibling) { if (n.classList.contains('card') && n !== card) { anchor = n; break; } }
+      if (anchor) { mode = 'anchor'; before = anchor.getBoundingClientRect().top; }
+    }
+    var topBefore = pr.top;
+    p.hidden = true;
     current = null;
     sync();
+    if (card) {
+      var y = window.pageYOffset;
+      if (mode === 'top') y += card.getBoundingClientRect().top - topBefore;
+      else if (mode === 'anchor') y += anchor.getBoundingClientRect().top - before;
+      else y += card.getBoundingClientRect().top - (navH + 16);
+      window.scrollTo({ top: Math.max(0, y), behavior: 'instant' });
+    }
     if (updateHash !== false) {
       if (card) card.focus({ preventScroll: true });
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
