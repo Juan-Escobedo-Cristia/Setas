@@ -120,8 +120,8 @@
       (p.nota ? '<p class="pt__note">' + esc(p.nota) + '</p>' : '') +
       '<div class="pt__coords">' + c + '</div>' +
       '<div class="pt__actions">' +
-      '<a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + p.lat + ',' + p.lon + '">Abrir Maps</a>' +
-      '<button type="button" class="btn btn--outline btn--sm" data-copy="' + c + '">Copiar coordenadas</button>' +
+      '<a class="btn btn--soft btn--sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + p.lat + ',' + p.lon + '">Abrir Maps</a>' +
+      '<button type="button" class="btn btn--text btn--sm" data-copy="' + c + '">Copiar coordenadas</button>' +
       '</div></div></div></li>';
   }
 
@@ -144,13 +144,22 @@
     }).join('');
 
     var needs = ids.map(function (id) {
-      var s = sp(id);
-      return '<div class="need"><h4>' + esc(s.nombre) + (s.cientifico ? '<i>' + esc(s.cientifico) + '</i>' : '') + '</h4><dl>' +
-        '<dt>Temporada</dt><dd>' + esc(val(s.temporada)) + '</dd>' +
+      var s = sp(id), nid = 'need-' + esc(id);
+      return '<div class="pt"><button type="button" class="pt__head" data-acc aria-expanded="false" aria-controls="' + nid + '">' +
+        '<span class="pt__main"><span class="pt__top"><span class="pt__name">' + esc(s.nombre) + '</span>' + (s.cientifico ? '<i class="pt__sci">' + esc(s.cientifico) + '</i>' : '') + '</span>' +
+        '<span class="pt__sum">Temporada: ' + esc(val(s.temporada)) + '</span></span>' +
+        '<svg class="pt__chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></button>' +
+        '<div class="pt__panel" id="' + nid + '"><div class="pt__inner"><dl class="need__dl">' +
         '<dt>Altitud</dt><dd>' + alt(s.altitud_m) + '</dd>' +
         '<dt>Hábitat</dt><dd>' + esc(Array.isArray(s.habitat) ? s.habitat.join(', ') : val(s.habitat)) + '</dd>' +
-        '<dt>Agua</dt><dd>' + esc(val(s.agua)) + '</dd></dl></div>';
+        '<dt>Agua</dt><dd>' + esc(val(s.agua)) + '</dd></dl></div></div></div>';
     }).join('');
+
+    // Pico previsto de la zona: la lectura con mayor pico entre las especies objetivo.
+    var objIds = z.especies_objetivo.map(function (e) { return e.id; }), best = null;
+    z.puntos.forEach(function (p) { p.lecturas.forEach(function (l) {
+      if (objIds.indexOf(l.especie) > -1 && isNum(l.pico_pct) && l.pico_fecha && (!best || l.pico_pct > best.pico_pct)) best = l;
+    }); });
 
     var sub = subtitle(z);
     return '<div class="pbar">' +
@@ -159,15 +168,17 @@
       '<div class="pbody">' +
       '<div class="panel__head"><h2 id="panel-title">' + esc(title(z)) + '</h2>' + (sub ? '<p class="panel__places">' + esc(sub) + '</p>' : '') + '</div>' +
       (z.resumen ? '<p class="panel__sub">' + esc(z.resumen) + '</p>' : '') +
-      '<div class="panel__meta"><span class="chip"><i class="dot"></i><b>' + alt(z.altitud_m) + '</b></span>' +
-      '<span class="chip chip--day"><b>Propuesta:</b> <span style="text-transform:capitalize">' + esc(z.dia_propuesto.dia) + '</span></span></div>' +
+      '<div class="panel__facts">' +
+      '<div class="fact"><b>' + alt(z.altitud_m) + '</b><span>Altitud</span></div>' +
+      '<div class="fact"><b style="text-transform:capitalize">' + esc(z.dia_propuesto.dia) + '</b><span>Propuesta</span></div>' +
+      (best ? '<div class="fact"><b>' + fmtDate(best.pico_fecha) + '</b><span>Pico previsto</span></div>' : '') + '</div>' +
       (z.dia_propuesto.motivo ? '<p class="dia-note">' + esc(z.dia_propuesto.motivo) + '</p>' : '') +
       '<section class="psec"><h3>Por qué esta zona</h3><p>' + esc(z.porque) + '</p></section>' +
       '<section class="psec"><h3>Especies objetivo</h3><div class="sp-list">' + espHTML + '</div></section>' +
       '<section class="psec"><h3>Puntos de referencia</h3><ul class="pts">' + z.puntos.map(pointHTML).join('') + '</ul></section>' +
       '<section class="psec"><h3>Riesgos</h3><ul class="risks">' + z.riesgos.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></section>' +
       '<section class="psec"><p class="wikiloc"><span class="wikiloc__ic" aria-hidden="true">↗</span>Para trazar la ruta en Wikiloc, marca estos puntos con las coordenadas.</p></section>' +
-      '<section class="psec"><h3>Qué necesita cada especie</h3><div class="needs">' + needs + '</div></section></div>';
+      '<section class="psec"><h3>Qué necesita cada especie</h3><div class="pts">' + needs + '</div></section></div>';
   }
 
   /* ---------- mapa SVG (sin tiles, proyección plana desde data.js) ---------- */
