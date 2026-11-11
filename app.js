@@ -162,7 +162,7 @@
     }); });
 
     var sub = subtitle(z);
-    return '<div class="pbar">' +
+    return '<span class="pbar__sentinel" aria-hidden="true"></span><div class="pbar">' +
       '<button type="button" class="btn--close" data-close aria-label="Cerrar panel"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>' +
       '<div class="pcover z' + zIndex(z) + '">' + photo(z) + dayBadge(z) + '</div>' +
       '<div class="pbody">' +
@@ -375,9 +375,9 @@
       '<div class="hero__text"><h1>Zonas para buscar setas en <em>' + esc((m.base || '').replace(/\s*\([^)]*\)/g, '')) + '</em></h1>' +
       '<p class="hero__lead">Toca una zona en el mapa o en las tarjetas para ver sus puntos, las especies y cómo montar la ruta.</p>' +
       '<div class="pill" role="group" aria-label="Resumen de la guía">' +
-      '<div class="pill__seg"><span>Lectura</span><b>' + fmtDate(m.fecha_lectura) + '</b></div>' +
-      '<div class="pill__seg"><span>Zonas</span><b>' + D.zonas.length + '</b></div>' +
-      '<div class="pill__seg"><span>Puntos</span><b>' + nPuntos + '</b></div>' +
+      '<div class="pill__seg"><b>' + fmtDate(m.fecha_lectura) + '</b><span>Lectura</span></div>' +
+      '<div class="pill__seg"><b>' + D.zonas.length + '</b><span>Zonas</span></div>' +
+      '<div class="pill__seg"><b>' + nPuntos + '</b><span>Puntos</span></div>' +
       '</div>' +
       '<div class="notice' + (stale ? ' notice--stale' : '') + '" role="' + (stale ? 'alert' : 'note') + '"><span class="notice__dot"></span><div>' +
       (stale ? '<strong>Datos desactualizados: comprueba el visor.</strong> Lectura del ' + fmtDate(m.fecha_lectura, true) + ' (hace ' + dias + ' días). ' : '<strong>Lectura del ' + fmtDate(m.fecha_lectura, true) + '.</strong> ') +
@@ -447,6 +447,7 @@
       if (anchor) { mode = 'anchor'; before = anchor.getBoundingClientRect().top; }
     }
     var topBefore = pr.top;
+    if (stuckIO) stuckIO.disconnect();
     p.hidden = true;
     current = null;
     sync();
@@ -480,7 +481,7 @@
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
     app._panel.hidden = false;
-    updateStuck();
+    watchStuck();
 
     if (scroll) {
       // Si la tarjeta está arriba del viewport o el panel fuera, baja hasta la tarjeta para que se vea unida a su panel.
@@ -490,17 +491,20 @@
     return true;
   }
 
-  // La barra del panel (día + cerrar) se queda fija bajo la cabecera y cobra fondo al despegarse de la imagen.
-  function updateStuck() {
-    var p = app._panel, bar = p && !p.hidden && p.querySelector('.pbar');
-    if (!bar) return;
+  // La barra del panel (cerrar) se queda fija bajo la cabecera y cobra fondo al despegarse de la imagen.
+  // Se vigila con un IntersectionObserver (más fiable que escuchar scroll durante el impulso del dedo en móvil).
+  var stuckIO;
+  function watchStuck() {
+    if (stuckIO) stuckIO.disconnect();
+    var p = app._panel, s = p.querySelector('.pbar__sentinel');
+    if (!s || !('IntersectionObserver' in window)) return;
     var navH = document.querySelector('.top-nav').offsetHeight;
-    p.classList.toggle('is-stuck', bar.getBoundingClientRect().top <= navH + 0.5 && p.getBoundingClientRect().top < navH - 0.5);
+    stuckIO = new IntersectionObserver(function (es) {
+      var e = es[es.length - 1];
+      p.classList.toggle('is-stuck', !e.isIntersecting && e.boundingClientRect.top < navH);
+    }, { rootMargin: '-' + navH + 'px 0px 0px 0px' });
+    stuckIO.observe(s);
   }
-  var stuckRaf = 0;
-  function queueStuck() { if (!stuckRaf) stuckRaf = requestAnimationFrame(function () { stuckRaf = 0; updateStuck(); }); }
-  window.addEventListener('scroll', queueStuck, { passive: true });
-  window.addEventListener('resize', queueStuck);
 
   function toggle(id) {
     if (current === id) { closePanel(); return; }
