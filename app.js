@@ -467,6 +467,7 @@
     }
     var topBefore = pr.top;
     if (stuckIO) stuckIO.disconnect();
+    if (viewIO) viewIO.disconnect();
     p.hidden = true;
     current = null;
     sync();
@@ -509,6 +510,7 @@
     app._panel.className = 'panel z' + zIndex(z);
     app._panel.hidden = false;
     watchStuck();
+    watchVisible();
 
     if (scroll) {
       // Si la tarjeta está arriba del viewport o el panel fuera, baja hasta la tarjeta para que se vea unida a su panel.
@@ -531,6 +533,41 @@
       p.classList.toggle('is-stuck', !e.isIntersecting && e.boundingClientRect.top < navH);
     }, { rootMargin: '-' + navH + 'px 0px 0px 0px' });
     stuckIO.observe(s);
+  }
+
+  // Si la tarjeta abierta sale por completo de la pantalla (arriba o abajo), se cierra sola.
+  // Solo se activa después de haberla visto, para no cerrarla mientras el scroll suave aún la está acercando.
+  var viewIO;
+  function watchVisible() {
+    if (viewIO) viewIO.disconnect();
+    var p = app._panel;
+    if (!('IntersectionObserver' in window)) return;
+    var navH = document.querySelector('.top-nav').offsetHeight, seen = false;
+    viewIO = new IntersectionObserver(function (es) {
+      if (p.hidden || !current) return;
+      var e = es[es.length - 1];
+      if (e.isIntersecting) { seen = true; return; }
+      if (seen) autoClose();
+    }, { rootMargin: '-' + navH + 'px 0px 0px 0px' });
+    viewIO.observe(p);
+  }
+
+  function autoClose() {
+    var p = app._panel, above = p.getBoundingClientRect().bottom <= 0, anchor = null, before = 0;
+    if (above) {
+      // El panel queda por encima: al cerrarlo el contenido de debajo sube, así que se compensa el scroll.
+      var active = app.querySelector('.card.on');
+      for (var n = p.nextElementSibling; n; n = n.nextElementSibling) { if (n.classList.contains('card') && n !== active) { anchor = n; break; } }
+      anchor = anchor || document.querySelector('.footer');
+      before = anchor.getBoundingClientRect().top;
+    }
+    if (stuckIO) stuckIO.disconnect();
+    if (viewIO) viewIO.disconnect();
+    p.hidden = true;
+    current = null;
+    sync();
+    if (above && anchor) window.scrollBy({ top: anchor.getBoundingClientRect().top - before, behavior: 'instant' });
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
 
   function toggle(id) {
