@@ -54,6 +54,23 @@
     var list = trees.length > 1 ? trees.slice(0, -1).join(', ') + ' y ' + trees[trees.length - 1] : trees[0];
     return (trees.length > 1 ? 'Bosque mixto de ' : 'Bosque de ') + list + (sin ? ', con puntos sin arbolado cartografiado' : '');
   }
+  // En el mapa se omite el prefijo "Montaña · " para que las etiquetas sean más cortas.
+  function mapLabel(z) { return title(z).replace(/^Montaña\s*·\s*/, '').split(/,| – /)[0].trim(); }
+  // Orden de las tarjetas: de mayor a menor probabilidad (la media más alta de la zona); si empatan, la de mayor altitud.
+  function topMedia(z) {
+    var m = Object.keys(z.media).map(function (k) { return z.media[k][3]; }).filter(isNum);
+    return m.length ? Math.max.apply(null, m) : -1;
+  }
+  function maxAlt(z) {
+    var n = String(z.alt_rango || '').match(/\d+/g);
+    return n ? Math.max.apply(null, n.map(Number)) : -1;
+  }
+  function zonasOrdenadas() {
+    return D.zonas.slice().sort(function (a, b) { return topMedia(b) - topMedia(a) || maxAlt(b) - maxAlt(a); });
+  }
+  function isMt(z) { return z.tipo === 'montaña'; }
+  function num(v) { return isNum(v) ? String(v).replace('.', ',') : NM; }
+  function coordOf(p) { return p.lat.toFixed(4) + ', ' + p.lon.toFixed(4); }
   function lowFiab(z) { return z.sitios.some(function (p) { return p.fiabilidad_punto === 'baja'; }); }
   function val(v) { return v == null || v === '' ? NM : v; }
   function zIndex(z) { return D.zonas.indexOf(z); }
@@ -84,6 +101,10 @@
         if (D.especies_nombre && !D.especies_nombre[k]) errs.push(w + ': la especie "' + k + '" no existe en especies_nombre');
       });
       if (z.sitios && (!Array.isArray(z.sitios) || !z.sitios.length)) errs.push(w + ': sitios está vacío');
+      if (z.tipo === 'montaña') {
+        ['acceso_a_pie', 'ruta', 'permisos'].forEach(function (k) { if (z[k] == null) errs.push(w + ': falta ' + k + ' (zona de montaña)'); });
+        if (z.ruta && !Array.isArray(z.ruta.puntos)) errs.push(w + '.ruta: falta puntos');
+      }
       (z.sitios || []).forEach(function (p, j) {
         var ws = w + '.sitios[' + j + ']' + (p && p.id ? ' (' + p.id + ')' : '');
         ['id', 'nombre', 'lat', 'lon', 'alt_m', 'bosque', 'min_coche', 'km_villamayor', 'afluencia_supuesta', 'fiabilidad_punto', 'especies'].forEach(function (k) {
@@ -103,8 +124,11 @@
   /* ---------- piezas ---------- */
   var PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>';
 
-  function photo(z) {
-    return '<div class="ph">' + PH_SVG + '</div><img src="' + esc(z.imagen || 'img/' + z.id + '.jpg') + '" alt="" loading="lazy" onerror="this.remove()">';
+  // eager = en el panel: la foto ya se vio en la tarjeta (está en caché), así que se pide y decodifica sin espera
+  // para que no aparezca el placeholder al abrir.
+  function photo(z, eager) {
+    return '<div class="ph">' + PH_SVG + '</div><img src="' + esc(z.imagen || 'img/' + z.id + '.jpg') + '" alt="" ' +
+      (eager ? 'loading="eager" decoding="sync"' : 'loading="lazy"') + ' onerror="this.remove()">';
   }
   // Etiqueta de zona: solo cuando algún sitio es de baja fiabilidad.
   function zoneBadge(z) {
@@ -126,7 +150,7 @@
       '<div class="card__meta"><div class="card__row"><h3 class="card__title">' + esc(title(z)) + '</h3>' +
       '<span class="card__alt"><i class="dot"></i>' + esc(val(z.alt_rango)) + '</span></div>' +
       (sub ? '<p class="card__sub">' + esc(sub) + '</p>' : '') +
-      '<p class="card__sub">' + esc(val(z.min_coche_rango)) + ' min en coche</p>' +
+      '<p class="card__sub">' + esc(val(z.min_coche_rango)) + (isMt(z) ? '' : ' min en coche') + '</p>' +
       '<div class="card__species">' + objs + '</div></div></button>';
   }
 
@@ -154,16 +178,20 @@
     var bosque = val(p.bosque);
     var resumen = metros(p.alt_m) + ' · ' + esc(bosque) + ' · Orientación: ' + esc(val(p.orientacion));
     var pid = 'pt-' + esc(p.id);
-    var baja = p.fiabilidad_punto === 'baja';
+    var baja = p.fiabilidad_punto === 'baja', media = p.fiabilidad_punto === 'media';
     var inc = Array.isArray(p.incumple) && p.incumple.length;
     return '<li class="pt">' +
       '<button type="button" class="pt__head" data-acc aria-expanded="false" aria-controls="' + pid + '">' +
       '<span class="pt__main"><span class="pt__top"><span class="pt__name">' + esc(p.nombre) + '</span>' +
       (baja ? '<span class="pt__tag pt__tag--warn">Baja fiabilidad</span>' : '') +
+      (media ? '<span class="pt__tag pt__tag--soft">Fiabilidad media</span>' : '') +
       (inc ? '<span class="pt__tag">' + esc(incumpleText(p.incumple)) + '</span>' : '') + '</span>' +
       '<span class="pt__sum">' + resumen + '</span></span>' + CHEV + '</button>' +
       '<div class="pt__panel" id="' + pid + '"><div class="pt__inner">' +
-      '<p class="pt__meta">' + (isNum(p.min_coche) ? p.min_coche + ' min en coche' : NM) + ' · ' + km(p.km_villamayor) + ' de Villamayor</p>' +
+      '<p class="pt__meta">' + (isNum(p.min_coche) ? p.min_coche + ' min en coche' : 'A pie (sin tiempo en coche)') + ' · ' + km(p.km_villamayor) + ' de Villamayor</p>' +
+      (p.municipio_aprox || isNum(p.ph_suelo) ? '<p class="pt__meta">' + (p.municipio_aprox ? 'Municipio (aprox.): ' + esc(p.municipio_aprox) : '') + (p.municipio_aprox && isNum(p.ph_suelo) ? ' · ' : '') + (isNum(p.ph_suelo) ? 'pH del suelo ' + num(p.ph_suelo) : '') + '</p>' : '') +
+      (p.espacio_protegido ? '<p class="pt__meta">Espacio protegido: ' + esc(p.espacio_protegido) + '</p>' : '') +
+      (p.nombre_visor ? '<p class="pt__meta">Nombre en el visor: ' + esc(p.nombre_visor) + '</p>' : '') +
       '<p class="pt__meta">Afluencia: ' + esc(val(p.afluencia_supuesta)) + ' (suposición)</p>' +
       (p.nota ? '<p class="pt__note">' + esc(p.nota) + '</p>' : '') +
       '<div class="pt__reads">' + reads + '</div>' +
@@ -197,20 +225,55 @@
         '<dt>Agua</dt><dd>' + esc(val(s.agua)) + '</dd></dl></div></div></div>';
     }).join('');
 
+    var mt = isMt(z), extra = '';
+    var acceso = '', rutaH = '', permH = '';
+    if (mt && z.acceso_a_pie) {
+      acceso = '<section class="psec"><h3>Cómo llegar</h3><p><b>' + esc(val(z.acceso_a_pie.texto_corto)) + '</b></p>' +
+        (z.acceso_a_pie.detalle ? '<p class="muted">' + esc(z.acceso_a_pie.detalle) + '</p>' : '') + '</section>';
+    }
+    if (mt && z.ruta && Array.isArray(z.ruta.puntos)) {
+      var r = z.ruta, tr = r.tramos_km_linea_recta || [];
+      rutaH = '<section class="psec"><h3>Ruta propuesta</h3>' +
+        '<p class="muted">' + esc(val(r.tipo)) + '</p>' +
+        '<ol class="rt-list">' + r.puntos.map(function (p, i) {
+          var c = coordOf(p);
+          return '<li class="rt"><span class="rt__n">' + (i + 1) + '</span><div class="rt__main"><b>' + esc(p.nombre) + '</b>' +
+            '<span class="rt__sub">' + metros(p.alt_m) + ' · ' + c + '</span>' + (i > 0 && isNum(tr[i - 1]) ? '<span class="rt__sub">' + km(tr[i - 1]) + ' desde el anterior</span>' : '') + '</div>' +
+            '<button type="button" class="btn btn--text btn--sm" data-copy="' + c + '">Copiar</button></li>';
+        }).join('') + '</ol>' +
+        (isNum(r.km_ida_linea_recta) ? '<p class="pt__meta">Ida en línea recta: ' + km(r.km_ida_linea_recta) + '</p>' : '') +
+        (r.aviso ? '<p class="pt__note">' + esc(r.aviso) + '</p>' : '') + '</section>';
+    }
+    if (mt && z.permisos) {
+      var pm = z.permisos;
+      permH = '<section class="psec"><h3>Permisos y normas</h3>' +
+        (pm.parques || []).map(function (k) {
+          return '<div class="perm"><b>' + esc(k.nombre) + '</b><span class="muted">' + esc(val(k.norma)) + ' · ' + esc(val(k.tramite)) + '</span>' +
+            (k.url ? '<a class="btn btn--soft btn--sm" target="_blank" rel="noopener" href="' + esc(k.url) + '">Ver trámite</a>' : '') + '</div>';
+        }).join('') +
+        (pm.general ? '<div class="perm"><b>' + esc(pm.general.nombre) + '</b><span class="muted">' + esc(val(pm.general.tramite)) + '</span>' +
+          (pm.general.url ? '<a class="btn btn--soft btn--sm" target="_blank" rel="noopener" href="' + esc(pm.general.url) + '">Ver trámite</a>' : '') + '</div>' : '') +
+        (pm.aviso ? '<p class="panel__aviso">' + esc(pm.aviso) + '</p>' : '') + '</section>';
+    }
+
     var sub = subtitle(z);
     return '<span class="pbar__sentinel" aria-hidden="true"></span><div class="pbar">' +
       '<button type="button" class="btn--close" data-close aria-label="Cerrar panel"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>' +
-      '<div class="pcover z' + zIndex(z) + '">' + photo(z) + zoneBadge(z) + '</div>' +
+      '<div class="pcover z' + zIndex(z) + '">' + photo(z, true) + zoneBadge(z) + '</div>' +
       '<div class="pbody">' +
       '<div class="panel__head"><h2 id="panel-title">' + esc(title(z)) + '</h2>' + (sub ? '<p class="panel__places">' + esc(sub) + '</p>' : '') + '</div>' +
       '<p class="panel__sub">' + esc(forestText(z.mezcla_bosque)) + '</p>' +
       '<div class="panel__facts">' +
       '<div class="fact"><b>' + esc(val(z.alt_rango)) + '</b><span>Altitud</span></div>' +
-      '<div class="fact"><b>' + esc(val(z.min_coche_rango)) + ' min</b><span>En coche</span></div>' +
+      (mt && z.ruta && isNum(z.ruta.km_ida_linea_recta) ?
+        '<div class="fact"><b>' + km(z.ruta.km_ida_linea_recta) + '</b><span>Ruta en línea recta</span></div>' :
+        '<div class="fact"><b>' + esc(val(z.min_coche_rango)) + ' min</b><span>En coche</span></div>') +
       '<div class="fact"><b>' + N + '</b><span>Puntos medidos</span></div></div>' +
       '<p class="panel__aviso">' + esc(val(z.aviso)) + '</p>' +
       '<section class="psec"><h3>Media de la zona</h3><div class="sp-list">' + espHTML + '</div></section>' +
+      acceso +
       '<section class="psec"><h3>Sitios</h3><ul class="pts">' + z.sitios.map(siteHTML).join('') + '</ul></section>' +
+      rutaH + permH +
       '<section class="psec"><p class="wikiloc"><span class="wikiloc__ic" aria-hidden="true">↗</span>Para trazar la ruta en Wikiloc, marca estos sitios con las coordenadas.</p></section>' +
       '<section class="psec"><h3>Qué necesita cada especie</h3><div class="pts">' + needs + '</div></section></div>';
   }
@@ -265,7 +328,7 @@
       var ly = Math.min(H - 16, maxY + BLOB * K + 22);
       return '<g class="mz z' + zIndex(z) + '" data-zona="' + esc(z.id) + '" role="button" tabindex="0" aria-expanded="false" aria-controls="panel" aria-label="Abrir zona ' + esc(title(z)) + '">' +
         '<g class="blobs">' + shape + '</g>' + dots +
-        '<text x="' + cx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle">' + esc(title(z)) + '</text></g>';
+        '<text x="' + cx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle">' + esc(mapLabel(z)) + '</text></g>';
     }).join('');
 
     var scale = '<g class="m-scale" transform="translate(' + (PAD * K * .5) + ' ' + (H - 26) + ')"><path d="M0 0v8h' + (5 * K) + 'v-8"/><text x="' + (5 * K / 2) + '" y="-5" text-anchor="middle">5 km</text></g>';
@@ -277,7 +340,7 @@
   }
 
   /* ---------- mapa real (Leaflet + teselas CARTO/OSM); si no carga, se usa el SVG ---------- */
-  var ZCOL = ['#2f9e6f', '#e0873a', '#7a5fc4', '#d6577a'];
+  var ZCOL = ['#2f9e6f', '#e0873a', '#7a5fc4', '#d6577a', '#1f9aa6', '#a8743a', '#5b7fd1'];
   var leaflet = { zones: {} };
 
   function bufferedZone(z) {
@@ -321,7 +384,7 @@
       poly.on('mouseover', function () { if (current !== z.id) poly.setStyle({ fillOpacity: .36 }); });
       poly.on('mouseout', function () { styleZone(z.id); });
       all = all.concat(b.ring);
-      var icon = L.divIcon({ className: 'zl', html: '<span>' + esc(title(z)) + '</span>', iconSize: [0, 0] });
+      var icon = L.divIcon({ className: 'zl', html: '<span>' + esc(mapLabel(z)) + '</span>', iconSize: [0, 0] });
       // La etiqueta se ancla al borde sur de la zona para no tapar los puntos.
       var south = Math.min.apply(null, b.ring.map(function (q) { return q[0]; }));
       var label = L.marker([south, b.center[1]], { icon: icon, keyboard: false }).addTo(map);
@@ -332,11 +395,43 @@
         m.on('click', function () { toggle(z.id); });
         m.addTo(map);
       });
-      leaflet.zones[z.id] = { poly: poly, label: label, col: col };
+      leaflet.zones[z.id] = { poly: poly, label: label, col: col, ring: b.ring, text: mapLabel(z) };
     });
-    map.fitBounds(all, { padding: [12, 12] });
+    map.fitBounds(all, { padding: [24, 24] });
     leaflet.map = map;
+    placeLabels();
+    map.on('zoomend moveend', placeLabels);
     return true;
+  }
+
+  // Las etiquetas se colocan donde menos estorban: se prueban varias posiciones alrededor de cada zona y se elige la que
+  // menos pisa a otras etiquetas, a otras zonas y los bordes del mapa.
+  function placeLabels() {
+    var map = leaflet.map;
+    if (!map) return;
+    var size = map.getSize(), ids = Object.keys(leaflet.zones), boxes = {}, placed = [];
+    function area(a, b) { var w = Math.min(a.r, b.r) - Math.max(a.l, b.l), h = Math.min(a.b, b.b) - Math.max(a.t, b.t); return w > 0 && h > 0 ? w * h : 0; }
+    ids.forEach(function (id) {
+      var pts = leaflet.zones[id].ring.map(function (q) { return map.latLngToContainerPoint(q); });
+      var xs = pts.map(function (p) { return p.x; }), ys = pts.map(function (p) { return p.y; });
+      boxes[id] = { l: Math.min.apply(null, xs), r: Math.max.apply(null, xs), t: Math.min.apply(null, ys), b: Math.max.apply(null, ys) };
+    });
+    ids.forEach(function (id) {
+      var o = leaflet.zones[id], z = boxes[id], cx = (z.l + z.r) / 2, cy = (z.t + z.b) / 2, w = o.text.length * 6.6 + 24, h = 26;
+      var cands = [[cx, z.b + 16], [cx, z.t - 16], [z.r + w / 2 + 4, cy], [z.l - w / 2 - 4, cy], [cx, z.b + 44], [cx, z.t - 44],
+        [z.r + w / 2 + 4, z.b], [z.l - w / 2 - 4, z.b], [z.r + w / 2 + 4, z.t], [z.l - w / 2 - 4, z.t]];
+      var best = null;
+      cands.forEach(function (c, i) {
+        var box = { l: c[0] - w / 2, r: c[0] + w / 2, t: c[1] - h / 2, b: c[1] + h / 2 }, pen = i * 20;
+        if (box.l < 4 || box.r > size.x - 4 || box.t < 4 || box.b > size.y - 4) pen += 100000;
+        placed.forEach(function (q) { pen += area(box, q) * 50; });
+        ids.forEach(function (k) { if (k !== id) pen += area(box, boxes[k]) * 0.2; });
+        pen += area(box, z) * 0.5;
+        if (!best || pen < best.pen) best = { pen: pen, c: c, box: box };
+      });
+      placed.push(best.box);
+      o.label.setLatLng(map.containerPointToLatLng(window.L.point(best.c[0], best.c[1])));
+    });
   }
 
   function styleZone(id) {
@@ -417,13 +512,17 @@
       '</section></div>' +
 
       '<section class="section" id="zonas"><div class="section__head"><h2>Zonas</h2></div>' +
-      '<div class="grid" data-grid>' + D.zonas.map(cardHTML).join('') + '</div></section>';
+      '<div class="grid" data-grid>' + zonasOrdenadas().map(cardHTML).join('') + '</div></section>';
 
     app.innerHTML = html.replace('</section></div><section class="section" id="zonas">', '</section></div><section class="section" id="zonas">');
 
     var f = '<div class="footer__cols"><div><h2>Límites de estos datos</h2><ul>' +
       m.aviso_limites.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' +
-      (D.agua_estimacion_propia ? '<p style="margin-top:12px"><strong>Agua necesaria:</strong> ' + esc(D.agua_estimacion_propia) + '</p>' : '') + '</div>' +
+      (D.agua_estimacion_propia ? '<p style="margin-top:12px"><strong>Agua necesaria:</strong> ' + esc(D.agua_estimacion_propia) + '</p>' : '') +
+      (m.zonas_montana ? '<h2 style="margin-top:24px">Zonas de montaña</h2>' +
+        (m.zonas_montana.criterios ? '<p>' + esc(m.zonas_montana.criterios) + '</p>' : '') +
+        (m.zonas_montana.metodo ? '<p style="margin-top:8px">' + esc(m.zonas_montana.metodo) + '</p>' : '') +
+        ((m.zonas_montana.limites || []).length ? '<ul style="margin-top:8px">' + m.zonas_montana.limites.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') : '') + '</div>' +
       '<div><h2>Fuentes</h2><ul>' +
       '<li><a href="' + esc(m.fuente_url) + '" target="_blank" rel="noopener">Visor de predicción de sporas.io</a> (v' + esc(m.visor || '') + ')</li>' +
       '<li><a href="https://sporas.io/visor/catalogo" target="_blank" rel="noopener">Catálogo de especies de sporas.io</a></li></ul>' +
@@ -439,6 +538,10 @@
     document.body.appendChild(t);
     app._toast = t;
     motion();
+    // Precarga de las fotos (en reposo) para que al abrir una zona ya estén en caché.
+    (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () {
+      D.zonas.forEach(function (z) { var im = new Image(); im.decoding = 'async'; im.src = z.imagen || 'img/' + z.id + '.jpg'; });
+    });
     if (window.L) { try { initLeaflet(); } catch (e) { var f2 = app.querySelector('.hero__map'); if (f2) f2.innerHTML = mapHTML(); } }
   }
 
