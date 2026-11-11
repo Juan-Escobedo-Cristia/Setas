@@ -464,20 +464,28 @@
     }
   }
 
-  function openZone(id, scroll) {
-    var z = D.zonas.filter(function (x) { return x.id === id; })[0];
+  // Se mide con todas las tarjetas visibles; la tarjeta abierta se oculta y su panel ocupa su lugar al inicio de la fila.
+  function placePanel(id) {
     var card = app.querySelector('.card[data-zona="' + id + '"]');
-    if (!z || !card) return false;
-    // Se mide con todas las tarjetas visibles; la tarjeta abierta se oculta y su panel ocupa su lugar al inicio de la fila.
-    app._panel.hidden = true;
+    var p = app._panel, wasHidden = p.hidden;
+    p.classList.add('static');
+    p.hidden = true;
     current = null;
     sync();
     var cards = Array.prototype.slice.call(card.parentNode.querySelectorAll('.card'));
     var top = card.offsetTop, first = card;
     cards.slice().reverse().forEach(function (c) { if (Math.abs(c.offsetTop - top) < 4) first = c; });
-    first.insertAdjacentElement('beforebegin', app._panel);
+    first.insertAdjacentElement('beforebegin', p);
     current = id;
     sync();
+    p.hidden = wasHidden;
+  }
+
+  function openZone(id, scroll) {
+    var z = D.zonas.filter(function (x) { return x.id === id; })[0];
+    var card = app.querySelector('.card[data-zona="' + id + '"]');
+    if (!z || !card) return false;
+    placePanel(id);
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
     app._panel.hidden = false;
@@ -566,10 +574,14 @@
       if (!id) { if (current) closePanel(false); return; }
       if (id !== current) openZone(id, true);
     });
-    var rz;
+    // Solo si cambia el ancho (giro, ventana): en móvil, la barra del navegador al hacer scroll también dispara 'resize'
+    // y no debe tocar el panel abierto. Se recoloca sin volver a pintarlo, para no cerrar sus desplegables.
+    var rz, lastW = window.innerWidth;
     window.addEventListener('resize', function () {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
       clearTimeout(rz);
-      rz = setTimeout(function () { if (current) openZone(current, false); }, 150);
+      rz = setTimeout(function () { if (current) placePanel(current); }, 150);
     });
     if (location.hash) openZone(location.hash.slice(1), true);
   }

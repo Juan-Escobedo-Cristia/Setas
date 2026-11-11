@@ -200,6 +200,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pbar { position: sticky; top: 80px; z-index: 6; height: 56px; padding: 0 12px 0 16px; display: flex; align-items: center; justify-content: flex-end; border-radius: var(--r-lg) var(--r-lg) 0 0; }
 .pbar .btn--close { position: static; }
 .pcover .badge { top: 16px; left: 16px; }
+.panel.static, .panel.static .pcover img, .panel.static .sp .bar__fill { animation: none; }
 .pbar__sentinel { position: absolute; top: 0; left: 0; width: 100%; height: 1px; pointer-events: none; }
 .panel.is-stuck .pbar { background: var(--canvas); box-shadow: 0 1px 0 var(--hairline), 0 4px 12px rgba(0,0,0,.06); border-radius: 0; }
 .panel.is-stuck .pbar .btn--close { box-shadow: none; background: var(--surface-soft); }
