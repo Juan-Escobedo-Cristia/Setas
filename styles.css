@@ -169,8 +169,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card--b .card__photo { aspect-ratio: 16 / 9; }
 
 /* Estado activo: sutil. La tarjeta se queda, el resto se atenúa y la flecha del panel la señala. */
-#app.has-open .card:not(.on) { opacity: .62; }
-#app.has-open .card:not(.on):hover, #app.has-open .card:not(.on):focus-visible { opacity: 1; }
+/* El atenuado de las otras tarjetas solo en pantallas anchas; en móvil se ven al 100 %. */
+@media (min-width: 744px) {
+  #app.has-open .card:not(.on) { opacity: .62; }
+  #app.has-open .card:not(.on):hover, #app.has-open .card:not(.on):focus-visible { opacity: 1; }
+}
 .card.on { display: none; }
 
 /* Bars */

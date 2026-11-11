@@ -530,6 +530,9 @@
     if (!z || !card) return false;
     closingTok++; pendingClose = false;
     app._panel.classList.remove('closing');
+    var navH = document.querySelector('.top-nav').offsetHeight;
+    var before = card.getBoundingClientRect();
+    var visible = before.bottom > navH && before.top < window.innerHeight;
     placePanel(id);
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
@@ -538,9 +541,18 @@
     watchVisible();
 
     if (scroll) {
-      // Si la tarjeta está arriba del viewport o el panel fuera, baja hasta la tarjeta para que se vea unida a su panel.
-      var target = app._panel.getBoundingClientRect().top + window.pageYOffset - 96;
-      window.scrollTo({ top: Math.max(0, target), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      if (visible) {
+        // La tarjeta ya se veía: el panel se abre en el mismo punto de la pantalla, sin mover la página.
+        // (Se mide la posición de diseño, sin la animación de entrada.)
+        var y = 0, el = app._panel;
+        while (el) { y += el.offsetTop; el = el.offsetParent; }
+        var d = (y - window.pageYOffset) - before.top;
+        if (Math.abs(d) > 1) window.scrollBy({ top: d, behavior: 'instant' });
+      } else {
+        // Abierta desde el mapa o un enlace: la tarjeta no estaba a la vista, así que se baja hasta ella.
+        var target = app._panel.getBoundingClientRect().top + window.pageYOffset - 96;
+        window.scrollTo({ top: Math.max(0, target), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
     }
     return true;
   }
