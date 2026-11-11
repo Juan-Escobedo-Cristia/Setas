@@ -455,8 +455,30 @@
     Object.keys(leaflet.zones).forEach(styleZone);
   }
 
+  // Cierre manual: el panel se desvanece un instante y después se pliega (con la posición de scroll conservada).
+  var closingTok = 0;
   function closePanel(updateHash) {
-    var card = current && app.querySelector('.card[data-zona="' + current + '"]');
+    if (!current) return;
+    var p = app._panel;
+    if (p.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) { finishClose(updateHash); return; }
+    if (p.classList.contains('closing')) return;
+    var tok = ++closingTok, id = current;
+    p.classList.add('closing');
+    setTimeout(function () {
+      if (tok !== closingTok || current !== id) return;
+      p.classList.remove('closing');
+      finishClose(updateHash);
+    }, 190);
+  }
+
+  function reappear(card) {
+    if (!card) return;
+    card.classList.add('reappear');
+    setTimeout(function () { card.classList.remove('reappear'); }, 450);
+  }
+
+  function finishClose(updateHash) {
+    var card = current && app.querySelector('.card[data-zona="' + current + '"]'); app.querySelector('.card[data-zona="' + current + '"]');
     var p = app._panel, pr = p.getBoundingClientRect(), navH = document.querySelector('.top-nav').offsetHeight;
     // Al cerrar, la página se acorta: se conserva lo que el usuario estaba viendo en vez de dejarlo al final.
     var mode = 'card', anchor = null, before = 0;
@@ -470,6 +492,7 @@
     if (viewIO) viewIO.disconnect();
     p.hidden = true;
     current = null;
+    reappear(card);
     sync();
     if (card) {
       var y = window.pageYOffset;
@@ -505,6 +528,8 @@
     var z = D.zonas.filter(function (x) { return x.id === id; })[0];
     var card = app.querySelector('.card[data-zona="' + id + '"]');
     if (!z || !card) return false;
+    closingTok++; pendingClose = false;
+    app._panel.classList.remove('closing');
     placePanel(id);
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
@@ -536,27 +561,47 @@
   }
 
   // Si la tarjeta abierta sale por completo de la pantalla (arriba o abajo), se cierra sola.
-  // Solo se activa después de haberla visto, para no cerrarla mientras el scroll suave aún la está acercando.
-  var viewIO;
+  // - Solo se activa después de haberla visto, para no cerrarla mientras el scroll suave aún la está acercando.
+  // - Espera a que el scroll se asiente y el dedo se levante: en móvil, cambiar la altura de la página en pleno
+  //   impulso hace que el navegador ignore la compensación y te lleve al final.
+  var viewIO, pendingClose = false, settleT, touching = false;
   function watchVisible() {
     if (viewIO) viewIO.disconnect();
+    pendingClose = false;
     var p = app._panel;
     if (!('IntersectionObserver' in window)) return;
     var navH = document.querySelector('.top-nav').offsetHeight, seen = false;
     viewIO = new IntersectionObserver(function (es) {
       if (p.hidden || !current) return;
       var e = es[es.length - 1];
-      if (e.isIntersecting) { seen = true; return; }
-      if (seen) autoClose();
+      if (e.isIntersecting) { seen = true; pendingClose = false; return; }
+      if (seen) { pendingClose = true; settle(); }
     }, { rootMargin: '-' + navH + 'px 0px 0px 0px' });
     viewIO.observe(p);
   }
 
+  function settle() {
+    clearTimeout(settleT);
+    settleT = setTimeout(function () {
+      if (!pendingClose || !current) return;
+      if (touching) { settle(); return; }
+      var p = app._panel, r = p.getBoundingClientRect(), navH = document.querySelector('.top-nav').offsetHeight;
+      pendingClose = false;
+      if (r.bottom > navH && r.top < window.innerHeight) return; // volvió a verse
+      autoClose();
+    }, 180);
+  }
+  window.addEventListener('scroll', function () { if (pendingClose) settle(); }, { passive: true });
+  window.addEventListener('touchstart', function () { touching = true; }, { passive: true });
+  window.addEventListener('touchend', function () { touching = false; }, { passive: true });
+  window.addEventListener('touchcancel', function () { touching = false; }, { passive: true });
+
   function autoClose() {
+    closingTok++;
     var p = app._panel, above = p.getBoundingClientRect().bottom <= 0, anchor = null, before = 0;
+    var active = app.querySelector('.card.on');
     if (above) {
       // El panel queda por encima: al cerrarlo el contenido de debajo sube, así que se compensa el scroll.
-      var active = app.querySelector('.card.on');
       for (var n = p.nextElementSibling; n; n = n.nextElementSibling) { if (n.classList.contains('card') && n !== active) { anchor = n; break; } }
       anchor = anchor || document.querySelector('.footer');
       before = anchor.getBoundingClientRect().top;
@@ -565,6 +610,7 @@
     if (viewIO) viewIO.disconnect();
     p.hidden = true;
     current = null;
+    reappear(active);
     sync();
     if (above && anchor) window.scrollBy({ top: anchor.getBoundingClientRect().top - before, behavior: 'instant' });
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
