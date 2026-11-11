@@ -332,6 +332,30 @@
       }).join('');
   }
 
+  // Entrada de la cabecera y aparición de tarjetas al llegar a ellas (solo transform y opacity).
+  function motion() {
+    Array.prototype.forEach.call(app.querySelectorAll('.hero__text > *, .hero__map, .clima'), function (el, i) {
+      el.classList.add('rise');
+      el.style.setProperty('--i', i);
+    });
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        io.unobserve(el);
+        el.classList.add('in');
+        setTimeout(function () { el.classList.remove('reveal', 'in'); el.style.removeProperty('--i'); }, 1200);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    Array.prototype.forEach.call(app.querySelectorAll('.card, .section__head'), function (el) {
+      var sibs = el.parentNode.querySelectorAll('.card, .section__head');
+      el.style.setProperty('--i', Array.prototype.indexOf.call(sibs, el) % 3);
+      el.classList.add('reveal');
+      io.observe(el);
+    });
+  }
+
   function render() {
     var m = D.meta, c = D.clima;
     document.title = m.titulo;
@@ -395,6 +419,7 @@
     t.className = 'toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
     document.body.appendChild(t);
     app._toast = t;
+    motion();
     if (window.L) { try { initLeaflet(); } catch (e) { var f2 = app.querySelector('.hero__map'); if (f2) f2.innerHTML = mapHTML(); } }
   }
 
@@ -479,6 +504,7 @@
     function ok() {
       var old = btn.textContent;
       btn.textContent = 'Copiado';
+      btn.classList.add('pulse'); setTimeout(function () { btn.classList.remove('pulse'); }, 400);
       toast('Coordenadas copiadas: ' + text);
       setTimeout(function () { btn.textContent = old; }, 1500);
     }
