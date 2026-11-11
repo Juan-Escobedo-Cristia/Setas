@@ -271,16 +271,15 @@
     if (!el || !window.L) return false;
     var L = window.L;
     var map = L.map(el, { zoomControl: true, scrollWheelZoom: false, dragging: !L.Browser.mobile, tap: false, attributionControl: true });
-    // Estilo "terrain": base de relieve + sombreado multiplicado + carreteras y nombres (Esri, sin clave ni referer,
-    // así que funciona también abriendo index.html como archivo).
+    // Mapa gris claro con relieve suave (Esri, sin clave ni referer, así que funciona también abriendo index.html como archivo).
+    // Los tiles ya vienen grises: sin filtros CSS ni mezclas, que hacen pesado el scroll en móvil.
     var ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
-    function pane(name, z, cls) { var p = map.createPane(name); p.style.zIndex = z; if (cls) p.className += ' ' + cls; return p; }
-    pane('tBase', 200, 'p-base'); pane('tHill', 210, 'p-hill'); pane('tRoads', 220); pane('tLabels', 230);
-    L.tileLayer(ESRI + 'Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { pane: 'tBase', maxNativeZoom: 10, maxZoom: 16 }).addTo(map);
-    L.tileLayer(ESRI + 'Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { pane: 'tHill', maxNativeZoom: 15, maxZoom: 16, opacity: .85 }).addTo(map);
-    L.tileLayer(ESRI + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', { pane: 'tRoads', maxNativeZoom: 15, maxZoom: 16 }).addTo(map);
+    function pane(name, z) { var p = map.createPane(name); p.style.zIndex = z; return p; }
+    pane('tBase', 200); pane('tHill', 210); pane('tLabels', 230);
+    L.tileLayer(ESRI + 'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { pane: 'tBase', maxNativeZoom: 16, maxZoom: 16 }).addTo(map);
+    L.tileLayer(ESRI + 'Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { pane: 'tHill', maxNativeZoom: 15, maxZoom: 16, opacity: .3 }).addTo(map);
     L.tileLayer(ESRI + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-      pane: 'tLabels', maxNativeZoom: 15, maxZoom: 16,
+      pane: 'tLabels', maxNativeZoom: 15, maxZoom: 16, opacity: .75,
       attribution: 'Tiles © Esri — Esri, HERE, Garmin, USGS, NGA, OpenStreetMap contributors'
     }).addTo(map);
 
@@ -457,8 +456,10 @@
     var navH = document.querySelector('.top-nav').offsetHeight;
     p.classList.toggle('is-stuck', bar.getBoundingClientRect().top <= navH + 0.5 && p.getBoundingClientRect().top < navH - 0.5);
   }
-  window.addEventListener('scroll', updateStuck, { passive: true });
-  window.addEventListener('resize', updateStuck);
+  var stuckRaf = 0;
+  function queueStuck() { if (!stuckRaf) stuckRaf = requestAnimationFrame(function () { stuckRaf = 0; updateStuck(); }); }
+  window.addEventListener('scroll', queueStuck, { passive: true });
+  window.addEventListener('resize', queueStuck);
 
   function toggle(id) {
     if (current === id) { closePanel(); return; }
