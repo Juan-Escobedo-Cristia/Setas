@@ -13,7 +13,7 @@ Doble clic en `index.html`. Necesita conexión solo para cargar la fuente Inter;
 Todo vive en `data.js`. No hay datos en el HTML ni en el JS. Para actualizar, pide a Claude Code que aplique el bloque JSON de la auditoría; solo cambia los campos que vengan en él.
 
 ## Imágenes
-Cada tarjeta muestra un placeholder. Para poner foto, guarda un archivo `img/<id-de-zona>.jpg` (`oeste.jpg`, `sur-proximo.jpg`, `sur-alto.jpg`, `sueve.jpg`). Si falta, se ve el placeholder. También puedes añadir `imagen: "ruta"` a una zona en `data.js`.
+Cada tarjeta muestra un placeholder. Para poner foto, guarda un archivo `img/<id-de-zona>.jpg` (`oeste.jpg`, `sur-proximo.jpg`, `sur-alto.jpg`). Si falta, se ve el placeholder. También puedes añadir `imagen: "ruta"` a una zona en `data.js`.
 
 ## Errores
 Si `data.js` no tiene un campo obligatorio, la página muestra la lista de campos que faltan en vez de quedarse en blanco.

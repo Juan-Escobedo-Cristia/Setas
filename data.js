@@ -151,32 +151,6 @@ window.SETALES_DATA = {
       ],
       riesgos: ["Frío y viento fuerte en cota alta.", "Posible helada: es la zona más expuesta."],
       plan_b: false
-    },
-    {
-      id: "sueve",
-      nombre: "Sueve (plan B)",
-      resumen: "Sierra litoral al noreste. Sin haya cerca en lo medido; solo sirve para trompeta negra.",
-      altitud_m: [250, 570],
-      dia_propuesto: { dia: "alternativa", motivo: "Plan B para trompeta negra, nunca para gula." },
-      porque: "La gula marca 0% por falta de haya o pino cerca. La trompeta negra marca 45% en carbayedas y castañares.",
-      especies_objetivo: [
-        { id: "trompeta", prob_pct: 45.5, n_puntos: 3, nota: "Pico previsto el 10 nov, ya en descenso." },
-        { id: "gula", prob_pct: 0, n_puntos: 2, nota: "Sin haya ni pino cerca." }
-      ],
-      puntos: [
-        { id: "bodes-567", nombre: "Bodes (ladera norte)", lat: 43.4365, lon: -5.2164, alt_m: 567, orientacion: null, bosque: "carbayu", uso: "referencia",
-          lecturas: [{ especie: "trompeta", prob_pct: 45.5, pico_pct: 69, pico_fecha: "2026-11-10", fecha_prevision: "2026-11-13", nota: null }] },
-        { id: "bodes-248", nombre: "Bodes (solana baja)", lat: 43.4158, lon: -5.2137, alt_m: 248, orientacion: "solana", bosque: "castaño", uso: "referencia",
-          lecturas: [{ especie: "trompeta", prob_pct: 45.5, pico_pct: 69, pico_fecha: "2026-11-10", fecha_prevision: "2026-11-13", nota: null }] },
-        { id: "eslabayo", nombre: "Eslabayo", lat: 43.4257, lon: -5.2944, alt_m: 280, orientacion: "umbría", bosque: "castaño", uso: "referencia",
-          lecturas: [{ especie: "trompeta", prob_pct: 45.5, pico_pct: 69, pico_fecha: "2026-11-10", fecha_prevision: "2026-11-13", nota: null }] },
-        { id: "carrandi", nombre: "Carrandi", lat: 43.4469, lon: -5.2618, alt_m: 479, orientacion: "umbría", bosque: "eucalipto blanco", uso: "evitar",
-          lecturas: [{ especie: "gula", prob_pct: 0, pico_pct: null, pico_fecha: null, fecha_prevision: "2026-11-13", nota: "Sin arbolado de la especie cerca." }] },
-        { id: "loroñe", nombre: "Loroñe", lat: 43.4469, lon: -5.2240, alt_m: 507, orientacion: "umbría", bosque: "carbayu", uso: "evitar",
-          lecturas: [{ especie: "gula", prob_pct: 0, pico_pct: null, pico_fecha: null, fecha_prevision: "2026-11-13", nota: "Sin arbolado de la especie cerca." }] }
-      ],
-      riesgos: ["No se midió ningún punto por encima de ~600 m: se desconoce qué hay en la cresta.", "Sierra expuesta al viento."],
-      plan_b: true
     }
   ]
 };

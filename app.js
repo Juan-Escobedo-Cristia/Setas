@@ -68,7 +68,7 @@
   var PH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>';
 
   function photo(z) {
-    return '<div class="ph">' + PH_SVG + '</div><img src="' + esc(z.imagen || 'img/' + z.id + '.jpg') + '" alt="" loading="lazy" onerror="this.remove()">';
+    return '<div class="ph">' + PH_SVG + '</div><img src="' + esc(z.imagen || 'img/' + z.id + '.jpg') + '" alt="" loading="lazy" onerror="if(!this.dataset.f&&!' + (z.imagen ? 1 : 0) + '){this.dataset.f=1;this.src=\'img/' + esc(z.id) + '.svg\'}else{this.remove()}">';
   }
   function dayBadge(z) {
     return '<span class="badge' + (z.plan_b ? ' badge--alt' : '') + '">' + esc(z.dia_propuesto.dia) + '</span>';
@@ -406,25 +406,23 @@
     var z = D.zonas.filter(function (x) { return x.id === id; })[0];
     var card = app.querySelector('.card[data-zona="' + id + '"]');
     if (!z || !card) return false;
+    // Se mide con todas las tarjetas visibles; la tarjeta abierta se oculta y su panel ocupa su lugar al inicio de la fila.
+    app._panel.hidden = true;
+    current = null;
+    sync();
+    var cards = Array.prototype.slice.call(card.parentNode.querySelectorAll('.card'));
+    var top = card.offsetTop, first = card;
+    cards.slice().reverse().forEach(function (c) { if (Math.abs(c.offsetTop - top) < 4) first = c; });
+    first.insertAdjacentElement('beforebegin', app._panel);
     current = id;
     sync();
-
-    // El panel va tras la última tarjeta de la misma fila.
-    var cards = Array.prototype.slice.call(card.parentNode.querySelectorAll('.card'));
-    var top = card.offsetTop, last = card;
-    cards.forEach(function (c) { if (Math.abs(c.offsetTop - top) < 4) last = c; });
-    last.insertAdjacentElement('afterend', app._panel);
     app._panel.innerHTML = panelHTML(z);
     app._panel.className = 'panel z' + zIndex(z);
     app._panel.hidden = false;
 
-    // La flecha del panel apunta a la imagen de su tarjeta.
-    var pr = app._panel.getBoundingClientRect(), cr = card.getBoundingClientRect();
-    app._panel.style.setProperty('--caret-x', Math.round(cr.left + cr.width / 2 - pr.left) + 'px');
-
     if (scroll) {
       // Si la tarjeta está arriba del viewport o el panel fuera, baja hasta la tarjeta para que se vea unida a su panel.
-      var target = card.getBoundingClientRect().top + window.pageYOffset - 96;
+      var target = app._panel.getBoundingClientRect().top + window.pageYOffset - 96;
       window.scrollTo({ top: Math.max(0, target), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
     return true;

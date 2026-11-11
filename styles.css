@@ -163,8 +163,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Estado activo: sutil. La tarjeta se queda, el resto se atenúa y la flecha del panel la señala. */
 #app.has-open .card:not(.on) { opacity: .62; }
 #app.has-open .card:not(.on):hover, #app.has-open .card:not(.on):focus-visible { opacity: 1; }
-.card.on .card__title { color: var(--primary); }
-.card.on .card__photo { box-shadow: var(--shadow); }
+.card.on { display: none; }
 
 /* Bars */
 .bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; }
@@ -181,10 +180,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .bar__fill.lo { background: #c9c9c9; }
 
 /* Panel: continuación de la imagen de su tarjeta */
-.panel { --caret-x: 50%; position: relative; grid-column: 1 / -1; margin-top: -8px; border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--canvas); box-shadow: var(--shadow); overflow: visible; scroll-margin-top: 96px; animation: pin .22s ease-out; }
+.panel { position: relative; grid-column: 1 / -1; border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--canvas); box-shadow: var(--shadow); overflow: visible; scroll-margin-top: 96px; animation: pin .22s ease-out; }
 @keyframes pin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .panel[hidden] { display: none; }
-.panel::before { content: ''; position: absolute; top: -9px; left: var(--caret-x); width: 16px; height: 16px; background: var(--zc, var(--hairline)); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0; z-index: 1; }
 .pcover { position: relative; height: 140px; border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; background: var(--surface-strong); }
 .pcover::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--zc); }
 .pcover .badge { top: 16px; left: 16px; }
