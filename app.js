@@ -68,6 +68,29 @@
   function zonasOrdenadas() {
     return D.zonas.slice().sort(function (a, b) { return topMedia(b) - topMedia(a) || maxAlt(b) - maxAlt(a); });
   }
+  var CHEV = '<svg class="pt__chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
+  var ARROW = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>';
+  var ARROW_L = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4"/></svg>';
+
+  // Una tarjeta por seta: foto (img/setas/<id>.jpg) y una explicación muy breve sacada de la ficha del catálogo.
+  function speciesCards() {
+    return Object.keys(D.especies_nombre).map(function (id) {
+      var s = sp(id), nombre = nombreEsp(id).replace(/\s*\([^)]*\)/, '');
+      var hab = Array.isArray(s.habitat) ? s.habitat.join(', ') : s.habitat;
+      var l2 = [s.temporada, Array.isArray(s.altitud_m) ? alt(s.altitud_m) : ''].filter(Boolean).join(' · ');
+      return '<article class="spc"><div class="spc__photo"><div class="ph">' + PH_SVG + '</div>' +
+        '<img src="img/setas/' + esc(id) + '.jpg" alt="" loading="lazy" onerror="this.remove()"></div>' +
+        '<h3 class="spc__name">' + esc(nombre) + '</h3>' +
+        (s.cientifico ? '<p class="spc__sci">' + esc(s.cientifico) + '</p>' : '') +
+        (l2 ? '<p class="spc__meta">' + esc(l2) + '</p>' : '') +
+        (hab ? '<p class="spc__meta">' + esc(hab.charAt(0).toUpperCase() + hab.slice(1)) + '</p>' : '') +
+        (s.caracteristicas ? '<div class="spc__acc"><button type="button" class="spc__btn" data-acc aria-expanded="false" aria-controls="car-' + esc(id) + '"><span>Características</span>' + CHEV + '</button>' +
+          '<div class="spc__panel" id="car-' + esc(id) + '"><div class="spc__inner"><ul class="spc__list">' +
+          (Array.isArray(s.caracteristicas) ? s.caracteristicas : [s.caracteristicas]).slice(0, 3).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+          '</div></div></div>' : '') + '</article>';
+    }).join('');
+  }
+
   function isMt(z) { return z.tipo === 'montaña'; }
   function num(v) { return isNum(v) ? String(v).replace('.', ',') : NM; }
   function coordOf(p) { return p.lat.toFixed(4) + ', ' + p.lon.toFixed(4); }
@@ -93,7 +116,7 @@
     D.zonas.forEach(function (z, i) {
       var w = 'zonas[' + i + ']' + (z && z.id ? ' (' + z.id + ')' : '');
       if (!z) { errs.push(w + ' vacía'); return; }
-      ['id', 'nombre', 'alt_rango', 'min_coche_rango', 'resumen', 'aviso', 'mezcla_bosque', 'media', 'sitios'].forEach(function (k) {
+      ['id', 'nombre', 'alt_rango', 'min_coche_rango', 'mezcla_bosque', 'media', 'sitios'].forEach(function (k) {
         if (z[k] == null) errs.push(w + ': falta ' + k);
       });
       if (z.media) Object.keys(z.media).forEach(function (k) {
@@ -156,7 +179,6 @@
 
   function coordText(p) { return p.lat.toFixed(4) + ', ' + p.lon.toFixed(4); }
 
-  var CHEV = '<svg class="pt__chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>';
 
   function incumpleText(arr) {
     return 'Incumple: ' + arr.map(function (t) { return String(t).replace('<', ' < ').replace(/(\d)\.(\d)/g, '$1,$2').replace(/(\d)km/, '$1 km'); }).join(', ');
@@ -213,18 +235,6 @@
         (n === 1 ? '<span class="warn1">Dato de un solo punto</span>' : '') + '</div>';
     }).join('');
 
-    // Qué necesita cada especie: las que tienen media por encima de 0 en la zona.
-    var needs = esp.filter(function (e) { return isNum(e.v[3]) && e.v[3] > 0; }).map(function (e) {
-      var s = sp(e.id), nid = 'need-' + esc(e.id);
-      return '<div class="pt"><button type="button" class="pt__head" data-acc aria-expanded="false" aria-controls="' + nid + '">' +
-        '<span class="pt__main"><span class="pt__top"><span class="pt__name">' + esc(s.nombre) + '</span>' + (s.cientifico ? '<i class="pt__sci">' + esc(s.cientifico) + '</i>' : '') + '</span>' +
-        '<span class="pt__sum">Temporada: ' + esc(val(s.temporada)) + '</span></span>' + CHEV + '</button>' +
-        '<div class="pt__panel" id="' + nid + '"><div class="pt__inner"><dl class="need__dl">' +
-        '<dt>Altitud</dt><dd>' + alt(s.altitud_m) + '</dd>' +
-        '<dt>Hábitat</dt><dd>' + esc(Array.isArray(s.habitat) ? s.habitat.join(', ') : val(s.habitat)) + '</dd>' +
-        '<dt>Agua</dt><dd>' + esc(val(s.agua)) + '</dd></dl></div></div></div>';
-    }).join('');
-
     var mt = isMt(z), extra = '';
     var acceso = '', rutaH = '', permH = '';
     if (mt && z.acceso_a_pie) {
@@ -269,13 +279,10 @@
         '<div class="fact"><b>' + km(z.ruta.km_ida_linea_recta) + '</b><span>Ruta en línea recta</span></div>' :
         '<div class="fact"><b>' + esc(val(z.min_coche_rango)) + ' min</b><span>En coche</span></div>') +
       '<div class="fact"><b>' + N + '</b><span>Puntos medidos</span></div></div>' +
-      '<p class="panel__aviso">' + esc(val(z.aviso)) + '</p>' +
       '<section class="psec"><h3>Media de la zona</h3><div class="sp-list">' + espHTML + '</div></section>' +
       acceso +
       '<section class="psec"><h3>Sitios</h3><ul class="pts">' + z.sitios.map(siteHTML).join('') + '</ul></section>' +
-      rutaH + permH +
-      '<section class="psec"><p class="wikiloc"><span class="wikiloc__ic" aria-hidden="true">↗</span>Para trazar la ruta en Wikiloc, marca estos sitios con las coordenadas.</p></section>' +
-      '<section class="psec"><h3>Qué necesita cada especie</h3><div class="pts">' + needs + '</div></section></div>';
+      rutaH + permH + '</div>';
   }
 
   /* ---------- mapa SVG (sin tiles, proyección plana desde data.js) ---------- */
@@ -511,6 +518,10 @@
       ((c.notas && c.notas.length) ? '<div class="clima__notes">' + c.notas.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' : '') +
       '</section></div>' +
 
+      '<section class="section" id="setas" aria-labelledby="setas-t"><div class="section__head"><h2 id="setas-t">Conoce las setas</h2>' +
+      '<div class="sp-nav"><button type="button" class="circ" data-sp="prev" aria-label="Anterior" hidden>' + ARROW_L + '</button><button type="button" class="circ" data-sp="next" aria-label="Siguiente">' + ARROW + '</button></div></div>' +
+      '<div class="sp-row" tabindex="0">' + speciesCards() + '</div></section>' +
+
       '<section class="section" id="zonas"><div class="section__head"><h2>Zonas</h2></div>' +
       '<div class="grid" data-grid>' + zonasOrdenadas().map(cardHTML).join('') + '</div></section>';
 
@@ -538,6 +549,40 @@
     document.body.appendChild(t);
     app._toast = t;
     motion();
+    var row = app.querySelector('.sp-row');
+    if (row) {
+      var prev = app.querySelector('[data-sp="prev"]'), next = app.querySelector('[data-sp="next"]');
+      var upd = function () {
+        var max = row.scrollWidth - row.clientWidth;
+        prev.hidden = row.scrollLeft < 4;
+        next.hidden = max < 4 || row.scrollLeft > max - 4;
+      };
+      row.addEventListener('scroll', upd, { passive: true });
+      var drag = null, moved = false;
+      row.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        drag = { x: e.clientX, left: row.scrollLeft }; moved = false;
+      });
+      window.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var dx = e.clientX - drag.x;
+        if (!moved && Math.abs(dx) < 5) return;
+        if (!moved) { moved = true; row.classList.add('dragging'); }
+        row.scrollLeft = drag.left - dx;
+      });
+      window.addEventListener('pointerup', function () {
+        if (!drag) return;
+        drag = null;
+        if (!moved) return;
+        row.classList.remove('dragging');
+        var step = spStep(), max = row.scrollWidth - row.clientWidth;
+        row.scrollTo({ left: Math.max(0, Math.min(max, Math.round(row.scrollLeft / step) * step)), behavior: 'smooth' });
+      });
+      // Tras arrastrar no debe saltar el clic del botón o enlace sobre el que se soltó.
+      row.addEventListener('click', function (e) { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+      window.addEventListener('resize', upd);
+      upd();
+    }
     // Precarga de las fotos (en reposo) para que al abrir una zona ya estén en caché.
     (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(function () {
       D.zonas.forEach(function (z) { var im = new Image(); im.decoding = 'async'; im.src = z.imagen || 'img/' + z.id + '.jpg'; });
@@ -716,10 +761,28 @@
     return id;
   }
 
+  // Carrusel de setas: los botones avanzan o retroceden de una tarjeta en una.
+  function spStep() {
+    var rw = app.querySelector('.sp-row'), a = rw && rw.querySelectorAll('.spc');
+    return a && a.length > 1 ? a[1].offsetLeft - a[0].offsetLeft : 240;
+  }
+  function spGo(dir) {
+    var rw = app.querySelector('.sp-row');
+    if (!rw) return;
+    var step = spStep(), max = rw.scrollWidth - rw.clientWidth;
+    var i = Math.round(rw.scrollLeft / step) + dir;
+    rw.scrollTo({ left: Math.max(0, Math.min(max, i * step)), behavior: 'smooth' });
+  }
+
   function bind() {
     app.addEventListener('click', function (e) {
       var z = e.target.closest('.card, .mz');
       if (z && app.contains(z)) { toggle(z.getAttribute('data-zona')); return; }
+      var spb = e.target.closest('[data-sp]');
+      if (spb) {
+        spGo(spb.getAttribute('data-sp') === 'next' ? 1 : -1);
+        return;
+      }
       var ac = e.target.closest('[data-acc]');
       if (ac) {
         var open = ac.getAttribute('aria-expanded') !== 'true';

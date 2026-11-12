@@ -146,7 +146,7 @@ window.SETALES_DATA = {
  },
  "especies_nombre": {
   "gula": "Gula de monte (C. lutescens)",
-  "trompeta": "Trompeta negra",
+  "trompeta": "Trompeta de los muertos",
   "niscalo": "Níscalo",
   "rebozuelo": "Rebozuelo",
   "boleto": "Boleto (B. edulis)"
@@ -202,10 +202,15 @@ window.SETALES_DATA = {
     "abetos"
    ],
    "agua": "Humedad sostenida con musgo. Tolera bien el frío y el hielo.",
-   "fuente": "catalogo_sporas"
+   "fuente": "catalogo_sporas",
+   "caracteristicas": [
+    "Forma de trompeta, con sombrero pardo anaranjado",
+    "Pliegues amarillos o anaranjados, sin láminas",
+    "Olor afrutado; crece en grupos en zonas húmedas con musgo"
+   ]
   },
   "trompeta": {
-   "nombre": "Trompeta negra",
+   "nombre": "Trompeta de los muertos",
    "cientifico": "Craterellus cornucopioides",
    "temporada": "Sep–Nov (muy tardía)",
    "altitud_m": null,
@@ -213,7 +218,12 @@ window.SETALES_DATA = {
     "bosque caducifolio"
    ],
    "agua": "Humedad sostenida bajo hojarasca. Pasa fácilmente desapercibida.",
-   "fuente": "catalogo_sporas"
+   "fuente": "catalogo_sporas",
+   "caracteristicas": [
+    "Embudo gris oscuro o negro, sin sombrero diferenciado",
+    "Cara externa casi lisa, sin láminas",
+    "Aromática y de sabor especiado"
+   ]
   },
   "niscalo": {
    "nombre": "Níscalo",
@@ -227,7 +237,12 @@ window.SETALES_DATA = {
     "pinos (exclusivo)"
    ],
    "agua": "Lluvia acumulada suficiente en las semanas previas más descenso térmico, sin heladas fuertes. Es la más fiable.",
-   "fuente": "catalogo_sporas"
+   "fuente": "catalogo_sporas",
+   "caracteristicas": [
+    "Sombrero naranja con anillos más claros",
+    "Látex naranja que se vuelve verdoso al aire",
+    "Crece bajo pinos y otras coníferas"
+   ]
   },
   "rebozuelo": {
    "nombre": "Rebozuelo",
@@ -245,7 +260,12 @@ window.SETALES_DATA = {
     "pinos"
    ],
    "agua": "No responde a un chaparrón puntual sino a un acumulado de humedad sostenido y generoso.",
-   "fuente": "catalogo_sporas"
+   "fuente": "catalogo_sporas",
+   "caracteristicas": [
+    "Color amarillo a naranja",
+    "Pliegues bajo el sombrero, no láminas",
+    "Carne firme y olor afrutado"
+   ]
   },
   "boleto": {
    "nombre": "Boletos",
@@ -262,7 +282,12 @@ window.SETALES_DATA = {
     "pinos"
    ],
    "agua": "Lluvia más temperaturas suaves.",
-   "fuente": "catalogo_sporas (parcial: solo se leyó la ficha de pinophilus)"
+   "fuente": "catalogo_sporas (parcial: solo se leyó la ficha de pinophilus)",
+   "caracteristicas": [
+    "Sombrero pardo con el borde más claro",
+    "Pie grueso con una red blanca en la parte alta",
+    "Poros en lugar de láminas; carne blanca que no cambia de color"
+   ]
   }
  },
  "agua_estimacion_propia": "Como orden de magnitud, la mayoría de estas especies quiere unos 40–60 mm repartidos en 2–3 semanas. Es una estimación general de Claude, no un dato del visor.",
