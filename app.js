@@ -91,6 +91,13 @@
     }).join('');
   }
 
+  // Tiempo en coche de la zona: en las de coche, el rango tal cual; en las de montaña, el tiempo en coche que
+  // indican sus textos de acceso (hasta el punto de salida).
+  function driveText(z) {
+    if (!isMt(z)) return val(z.min_coche_rango) + ' min';
+    var a = z.acceso_a_pie || {}, re = /(≤?\d+(?:[–-]\d+)?)\s*min(?:utos)?\s+en coche/, m = re.exec(a.detalle || '') || /(≤?\d+(?:[–-]\d+)?)\s*min/.exec(a.texto_corto || '') || /(≤?\d+(?:[–-]\d+)?)\s*min/.exec(z.min_coche_rango || '');
+    return m ? m[1] + ' min' : val(z.min_coche_rango);
+  }
   function isMt(z) { return z.tipo === 'montaña'; }
   function num(v) { return isNum(v) ? String(v).replace('.', ',') : NM; }
   function coordOf(p) { return p.lat.toFixed(4) + ', ' + p.lon.toFixed(4); }
@@ -275,10 +282,8 @@
       '<p class="panel__sub">' + esc(forestText(z.mezcla_bosque)) + '</p>' +
       '<div class="panel__facts">' +
       '<div class="fact"><b>' + esc(val(z.alt_rango)) + '</b><span>Altitud</span></div>' +
-      (mt && z.ruta && isNum(z.ruta.km_ida_linea_recta) ?
-        '<div class="fact"><b>' + km(z.ruta.km_ida_linea_recta) + '</b><span>Ruta en línea recta</span></div>' :
-        '<div class="fact"><b>' + esc(val(z.min_coche_rango)) + ' min</b><span>En coche</span></div>') +
-      '<div class="fact"><b>' + N + '</b><span>Puntos medidos</span></div></div>' +
+      '<div class="fact"><b>' + esc(driveText(z)) + '</b><span>En coche</span></div>' +
+      '<div class="fact"><b>' + N + '</b><span>Puntos</span></div></div>' +
       '<section class="psec"><h3>Media de la zona</h3><div class="sp-list">' + espHTML + '</div></section>' +
       acceso +
       '<section class="psec"><h3>Sitios</h3><ul class="pts">' + z.sitios.map(siteHTML).join('') + '</ul></section>' +
