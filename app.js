@@ -451,10 +451,13 @@
   }
 
   /* ---------- página ---------- */
-  function statRow(label, o, unit) {
-    return '<div class="clima__row-label">' + label + '</div>' +
+  // Siempre con un decimal, para que las columnas se lean alineadas.
+  function dec(v) { return v.toFixed(1).replace('.', ','); }
+  function diaSemana(iso) { var d = parseISO(iso); return d ? ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][d.getDay()] : ''; }
+  function statRow(label, o, unit, suf) {
+    return '<div class="clima__row-label">' + label + ' en <span class="u">' + unit + '</span></div>' +
       ['d7', 'd15', 'd30', 'd60'].map(function (k) {
-        return '<div class="stat"><b>' + (isNum(o[k]) ? String(o[k]).replace('.', ',') : NM) + (isNum(o[k]) ? '<small>' + unit + '</small>' : '') + '</b><span>' + k.slice(1) + ' días</span></div>';
+        return '<div class="stat"><b>' + (isNum(o[k]) ? dec(o[k]) + (suf || '') : NM) + '</b><span>' + k.slice(1) + ' días</span></div>';
       }).join('');
   }
 
@@ -510,12 +513,15 @@
         '<figure class="map map--live"><div id="map" role="region" aria-label="Mapa de las zonas. Las tarjetas de abajo hacen lo mismo con teclado."></div>' +
         '<figcaption>Las zonas son áreas orientativas alrededor de los sitios medidos, no límites reales de bosque.</figcaption></figure>' : mapHTML()) + '</div>' +
 
-      '<section class="clima" aria-labelledby="clima-t"><div class="clima__head"><h2 id="clima-t">Clima de referencia</h2>' +
-      '<span>' + esc(c.punto_referencia ? c.punto_referencia.nombre + (isNum(c.punto_referencia.alt_m) ? ', ' + c.punto_referencia.alt_m + ' m' : '') + (c.punto_referencia.orientacion ? ', ' + c.punto_referencia.orientacion : '') : '') + '</span>' +
-      (c.fecha_clima ? '<span class="clima__date">Clima del ' + fmtDate(c.fecha_clima) + '</span>' : '') + '</div>' +
-      '<div class="clima__grid">' + statRow('Lluvia acumulada', c.lluvia_mm, ' mm') + statRow('Temperatura media', c.temp_media_c, ' °C') + '</div>' +
-      (c.prevision ? '<p class="clima__forecast"><strong>Previsión:</strong> ' + (isNum(c.prevision.lluvia_mm) ? String(c.prevision.lluvia_mm).replace('.', ',') + ' mm' : NM) + ' el ' + fmtDate(c.prevision.fecha) + (c.prevision.nota ? '. ' + esc(c.prevision.nota) : '') + '</p>' : '') +
-      ((c.notas && c.notas.length) ? '<div class="clima__notes">' + c.notas.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' : '') +
+      '<section class="clima" aria-labelledby="clima-t"><div class="clima__head"><h2 id="clima-t">Clima de referencia</h2></div>' +
+      '<p class="clima__sub">' + esc([
+        c.punto_referencia ? c.punto_referencia.nombre + (isNum(c.punto_referencia.alt_m) ? ', ' + c.punto_referencia.alt_m + ' m' : '') + (c.punto_referencia.orientacion ? ', ' + c.punto_referencia.orientacion : '') : '',
+        c.fecha_clima ? 'Clima del ' + fmtDate(c.fecha_clima) : ''
+      ].filter(Boolean).join(' · ')) + '</p>' +
+      '<div class="clima__grid">' + statRow('Lluvia acumulada', c.lluvia_mm, 'mm') + statRow('Temperatura media', c.temp_media_c, '°C', '°') + '</div>' +
+      (c.prevision ? '<p class="clima__forecast"><strong>Previsión:</strong> ' + (isNum(c.prevision.lluvia_mm) ? dec(c.prevision.lluvia_mm) + ' mm' : NM) + ' el ' + diaSemana(c.prevision.fecha) + ' ' + fmtDate(c.prevision.fecha) + (c.prevision.nota ? '. ' + esc(c.prevision.nota) : '') + '</p>' : '') +
+      ((c.notas && c.notas.length) ? '<div class="spc__acc clima__acc"><button type="button" class="spc__btn" data-acc aria-expanded="false" aria-controls="clima-notas"><span>Notas del clima</span>' + CHEV + '</button>' +
+        '<div class="spc__panel" id="clima-notas"><div class="spc__inner"><ul class="spc__list">' + c.notas.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></div></div></div>' : '') +
       '</section></div>' +
 
       '<section class="section" id="setas" aria-labelledby="setas-t"><div class="section__head"><h2 id="setas-t">Conoce las setas</h2>' +

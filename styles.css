@@ -129,15 +129,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .clima { background: var(--surface-soft); border-radius: var(--r-lg); padding: 20px 24px; align-self: start; }
 .clima__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
 .clima__head h2 { font-size: 16px; font-weight: 600; }
-.clima__head span { font-size: 14px; color: var(--muted); }
+.clima__sub { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .clima__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; margin-top: 16px; }
+.clima__row-label .u { text-transform: none; }
 .clima__row-label { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; margin-top: 4px; }
 .stat { display: flex; flex-direction: column; }
 .stat b { font-size: 22px; font-weight: 600; letter-spacing: -.4px; line-height: 1.2; }
 .stat b small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 2px; }
 .stat span { font-size: 13px; color: var(--muted); }
 .clima__notes { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hairline); font-size: 14px; color: var(--body); display: grid; gap: 4px; }
-.clima__forecast { margin-top: 16px; font-size: 14px; }
+.clima__forecast { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-md); background: var(--canvas); font-size: 14px; line-height: 1.43; }
 .clima__forecast strong { font-weight: 600; }
 
 /* Section heads */
@@ -233,7 +234,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .perm:first-of-type { margin-top: 12px; }
 .perm span { font-size: 14px; }
 .panel__aviso { margin: 16px auto 0; max-width: 56ch; padding: 12px 16px; border-radius: var(--r-md); background: var(--surface-soft); font-size: 14px; line-height: 1.43; color: var(--body); text-align: left; }
-.clima__date { font-size: 14px; color: var(--muted); }
+.clima__acc { margin-top: 8px; }
 .dia-note { color: var(--muted); font-size: 14px; margin: 12px auto 0; max-width: 56ch; }
 
 .sp-list { display: grid; gap: 16px; grid-template-columns: 1fr; }
