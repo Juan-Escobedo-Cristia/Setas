@@ -358,8 +358,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sp-row.dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
 .sp-row.dragging img { pointer-events: none; }
 .spc { flex: 0 0 min(72vw, 260px); scroll-snap-align: start; }
-.spc__photo { position: relative; aspect-ratio: 1 / .95; border-radius: var(--r-lg); overflow: hidden; background: var(--surface-strong); }
+.spc__photo { position: relative; aspect-ratio: 1 / .95; border-radius: var(--r-md); overflow: hidden; background: var(--surface-strong); }
 .spc__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.spc > :not(.spc__photo) { padding-left: 4px; padding-right: 4px; }
 .spc__name { margin-top: 12px; font-size: 16px; font-weight: 500; line-height: 1.25; }
 .spc__sci { margin-top: 2px; font-size: 14px; font-style: italic; color: var(--muted); }
 .spc__meta { margin-top: 2px; font-size: 14px; line-height: 1.43; color: var(--muted); }
