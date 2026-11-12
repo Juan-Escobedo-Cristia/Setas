@@ -137,7 +137,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .stat b { font-size: 22px; font-weight: 600; letter-spacing: -.4px; line-height: 1.2; }
 .stat b small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 2px; }
 .stat span { font-size: 13px; color: var(--muted); }
-.clima__notes { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hairline); font-size: 14px; color: var(--body); display: grid; gap: 4px; }
 .clima__forecast { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-md); background: var(--canvas); font-size: 14px; line-height: 1.43; }
 .clima__forecast strong { font-weight: 600; }
 
@@ -234,7 +233,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .perm:first-of-type { margin-top: 12px; }
 .perm span { font-size: 14px; }
 .panel__aviso { margin: 16px auto 0; max-width: 56ch; padding: 12px 16px; border-radius: var(--r-md); background: var(--surface-soft); font-size: 14px; line-height: 1.43; color: var(--body); text-align: left; }
-.clima__acc { margin-top: 8px; }
+/* Notas del clima: texto recortado a 2 líneas con "Ver más" */
+.clima__notes { margin-top: 16px; font-size: 14px; line-height: 1.43; color: var(--body); }
+.clima__txt b { font-weight: 600; }
+.clima__more { display: inline; padding: 0; border: 0; background: transparent; font: inherit; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); cursor: pointer; }
 .dia-note { color: var(--muted); font-size: 14px; margin: 12px auto 0; max-width: 56ch; }
 
 .sp-list { display: grid; gap: 16px; grid-template-columns: 1fr; }

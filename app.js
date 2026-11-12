@@ -520,8 +520,7 @@
       ].filter(Boolean).join(' · ')) + '</p>' +
       '<div class="clima__grid">' + statRow('Lluvia acumulada', c.lluvia_mm, 'mm') + statRow('Temperatura media', c.temp_media_c, '°C', '°') + '</div>' +
       (c.prevision ? '<p class="clima__forecast"><strong>Previsión:</strong> ' + (isNum(c.prevision.lluvia_mm) ? dec(c.prevision.lluvia_mm) + ' mm' : NM) + ' el ' + diaSemana(c.prevision.fecha) + ' ' + fmtDate(c.prevision.fecha) + (c.prevision.nota ? '. ' + esc(c.prevision.nota) : '') + '</p>' : '') +
-      ((c.notas && c.notas.length) ? '<div class="spc__acc clima__acc"><button type="button" class="spc__btn" data-acc aria-expanded="false" aria-controls="clima-notas"><span>Notas del clima</span>' + CHEV + '</button>' +
-        '<div class="spc__panel" id="clima-notas"><div class="spc__inner"><ul class="spc__list">' + c.notas.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></div></div></div>' : '') +
+      ((c.notas && c.notas.length) ? '<div class="clima__notes"><p class="clima__txt" id="clima-notas"></p></div>' : '') +
       '</section></div>' +
 
       '<section class="section" id="setas" aria-labelledby="setas-t"><div class="section__head"><h2 id="setas-t">Conoce las setas</h2>' +
@@ -555,6 +554,11 @@
     document.body.appendChild(t);
     app._toast = t;
     motion();
+    if (document.getElementById('clima-notas')) {
+      fitNotes();
+      window.addEventListener('resize', fitNotes);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNotes);
+    }
     var row = app.querySelector('.sp-row');
     if (row) {
       var prev = app.querySelector('[data-sp="prev"]'), next = app.querySelector('[data-sp="next"]');
@@ -780,10 +784,24 @@
     rw.scrollTo({ left: Math.max(0, Math.min(max, i * step)), behavior: 'smooth' });
   }
 
+  // Notas del clima: cerradas muestran solo el arranque y "… Ver más" integrado en el texto.
+  var notesOpen = false;
+  function fitNotes() {
+    var p = document.getElementById('clima-notas');
+    if (!p) return;
+    var full = (D.clima.notas || []).join(' '), lead = '<b>Notas del clima:</b> ';
+    function btn(t) { return '<button type="button" class="clima__more" data-more aria-expanded="' + (t === 'Ver menos') + '">' + t + '</button>'; }
+    if (notesOpen) { p.innerHTML = lead + esc(full) + ' ' + btn('Ver menos'); return; }
+    // Cerrado: solo el arranque de la primera nota (hasta el primer paréntesis, coma o punto) y "… Ver más".
+    var first = (D.clima.notas || [''])[0], m = /^[^(,.]+/.exec(first), preview = (m ? m[0] : first).trim();
+    p.innerHTML = lead + esc(preview) + '… ' + btn('Ver más');
+  }
+
   function bind() {
     app.addEventListener('click', function (e) {
       var z = e.target.closest('.card, .mz');
       if (z && app.contains(z)) { toggle(z.getAttribute('data-zona')); return; }
+      if (e.target.closest('[data-more]')) { notesOpen = !notesOpen; fitNotes(); return; }
       var spb = e.target.closest('[data-sp]');
       if (spb) {
         spGo(spb.getAttribute('data-sp') === 'next' ? 1 : -1);
